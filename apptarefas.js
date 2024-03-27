@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Alert, Platform, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Alert, Platform, Image, } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker'; //seletor de data
 
+
+import { Entypo } from '@expo/vector-icons'; //pacote de icones
 
 export default function TarefasScreen() {
   const [tasks, setTasks] = useState([]);
@@ -20,6 +23,22 @@ export default function TarefasScreen() {
   const [showAutoDateWarning, setShowAutoDateWarning] = useState(false);
   const navigation = useNavigation();
   const [image, setImage] = useState(null);
+  const [taskDate, setTaskDate] = useState(new Date()); //armazena a data das tarefas
+  const [taskTime, setTaskTime] = useState(new Date()); //armazena a hora das tarefas
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+
+  const onChangeDate = (event, selectedDate) => {
+    const currentDate = selectedDate || taskDate;
+    setDatePickerVisible(Platform.OS === 'ios');
+    setTaskDate(currentDate);
+  };
+
+  const onChangeTime = (event, selectedTime) => {
+    const currentTime = selectedTime || taskTime;
+    setTimePickerVisible(Platform.OS === 'ios');
+    setTaskTime(currentTime);
+  };
 
   //mensagem
   Notifications.setNotificationHandler({
@@ -298,9 +317,7 @@ export default function TarefasScreen() {
           <Text style={styles.modalTitle}>
             {editingTaskId ? 'Editar Tarefa' : 'Adicionar Tarefa'}
           </Text>
-          <Text style={styles.autoDateText}>
-            {showAutoDateWarning && 'A data de início será definida automaticamente.'}
-          </Text>
+
           <TextInput
             style={styles.input}
             placeholder="Título da Tarefa"
@@ -317,51 +334,58 @@ export default function TarefasScreen() {
             multiline={true}
             numberOfLines={4}
           />
-          <View style={styles.dateTimeContainer}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginRight: 5 }]}
-              placeholder="Data de Conclusão (dd/mm/aaaa)"
-              placeholderTextColor="black"
-              value={taskDueDateText}
-              onChangeText={setTaskDueDateText}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Hora de Conclusão (hh:mm)"
-              placeholderTextColor="black"
-              value={taskDueTimeText}
-              onChangeText={setTaskDueTimeText}
-              keyboardType="numeric"
-            />
-            
-            {image && (
-              <View onPress={() => setopenModalImg(true)}>
-                <Image style={styles.imgNovoContato} source={{ uri: image || setImage }} />
-              </View>
-            )}
-
-            <TouchableOpacity onPress={pickImage}>
-              <Text style={styles.inputImage}>Selecionar Imagem</Text>
-            </TouchableOpacity>
-            <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
-          </View>
           <View style={styles.buttonContainer}>
-            {editingTaskId ? (
-              <>
-                <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
-                <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
-                <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
-              </>
-            ) : (
-              <Button title="Adicionar" onPress={async () => {
-                handleAddTask();
-                await sendPushNotification(expoPushToken);
-              }} />
-            )}
+
+
+
+
+            <DateTimePicker
+              testID="datePicker"
+              value={taskDate}
+              mode={'date'}
+              is24Hour={true}
+              display="default"
+              onChange={onChangeDate}
+            />
+
+
+
+            <DateTimePicker
+              testID="timePicker"
+              value={taskTime}
+              mode={'time'}
+              is24Hour={true}
+              display="default"
+              onChange={onChangeTime}
+            />
+
           </View>
+
+          {image && (
+            <View onPress={() => setopenModalImg(true)}>
+              <Image style={styles.imgNovoContato} source={{ uri: image || setImage }} />
+            </View>
+          )}
+
+          <TouchableOpacity onPress={pickImage}>
+            <Text style={styles.inputImage}>Selecionar Imagem</Text>
+          </TouchableOpacity>
+          <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
         </View>
-      </Modal>
+        <View style={styles.buttonContainer}>
+          {editingTaskId ? (
+            <>
+              <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
+              <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
+              <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
+            </>
+          ) : (
+            <Button title="Adicionar" onPress={async () => {
+              handleAddTask();
+              await sendPushNotification(expoPushToken);
+            }} />
+          )}
+        </View></Modal>
     </View>
   );
 }

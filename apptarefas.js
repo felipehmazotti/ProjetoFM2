@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker'; //seletor de data
+import { Ionicons } from '@expo/vector-icons';
 
 
 import { Entypo } from '@expo/vector-icons'; //pacote de icones
@@ -27,6 +28,8 @@ export default function TarefasScreen() {
   const [taskTime, setTaskTime] = useState(new Date()); //armazena a hora das tarefas
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [taskLocation, setTaskLocation] = useState('');
+  
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || taskDate;
@@ -140,8 +143,6 @@ export default function TarefasScreen() {
 
   const handleAddTask = () => {
     if (!isTaskValid()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios.');
-      return;
     }
 
     const currentDate = new Date();
@@ -226,6 +227,7 @@ export default function TarefasScreen() {
     setTaskDueTimeText('');
     setImage(null);
   };
+
 
   //image picker
   const pickImage = async () => {
@@ -350,7 +352,7 @@ export default function TarefasScreen() {
 
 
 
-            <DateTimePicker
+            <DateTimePicker style={styles.dateTimeContainer2}
               testID="timePicker"
               value={taskTime}
               mode={'time'}
@@ -367,9 +369,10 @@ export default function TarefasScreen() {
             </View>
           )}
 
-          <TouchableOpacity onPress={pickImage}>
-            <Text style={styles.inputImage}>Selecionar Imagem</Text>
-          </TouchableOpacity>
+<TouchableOpacity onPress={pickImage} style={styles.inputImage}>
+  <Ionicons name="camera" size={24} color="black" />
+</TouchableOpacity>
+
           <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
         </View>
         <View style={styles.buttonContainer}>
@@ -380,10 +383,16 @@ export default function TarefasScreen() {
               <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
             </>
           ) : (
-            <Button title="Adicionar" onPress={async () => {
-              handleAddTask();
-              await sendPushNotification(expoPushToken);
-            }} />
+            <TouchableOpacity
+  style={styles.addButton2}
+  onPress={async () => {
+    handleAddTask();
+    await sendPushNotification(expoPushToken);
+  }}
+>
+  <Text style={styles.buttonText2}>+</Text>
+</TouchableOpacity>
+
           )}
         </View></Modal>
     </View>
@@ -402,7 +411,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 33,
   },
   inputpesuisa: {
     height: 40,
@@ -472,11 +481,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     padding: 20,
+    marginTop: 3,
   },
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginTop: 50,
+    marginBottom: 17,
   },
   input: {
     height: 40,
@@ -489,10 +500,43 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 3.5,
+    marginLeft: -10,
+    marginTop: 15,
   },
   dateTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
   },
+  dateTimeContainer2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    marginRight: 150,
+  },
+  inputImage: {
+    marginLeft: 270,
+    marginRight: 20,
+    marginTop: -35,
+    alignItems: "center",
+    backgroundColor: '#ebebed',
+    borderRadius: 10,
+    padding: 5, // Espaçamento interno
+  },
+  addButton2: {
+    width: 50, // Largura do botão
+    height: 50, // Altura do botão
+    marginLeft: 190,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2196F3',
+    marginTop: -580, // Espaçamento acima do botão
+  },
+  buttonText2: {
+    color: '#fff', // Cor do texto
+    fontSize: 20, // Tamanho do texto
+    fontWeight: 'bold', // Negrito
+  },
+
 });

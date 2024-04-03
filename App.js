@@ -25,7 +25,7 @@ const Navegacao = () => {
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 {/* Adicione um ícone para "Tarefas" */}
                 <MaterialIcons name="list" size={24} color={color} />
-                <Text style={{ color, fontSize: 16 }}>Tarefas</Text>
+                <Text style={{ color, fontSize: 16, marginRight: -30, marginLeft: -27, }}>Tarefas</Text>
               </View>
             ),
           }}

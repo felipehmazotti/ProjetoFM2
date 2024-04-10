@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Alert, Platform, Image, } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Platform, Image } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker'; //seletor de data
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-
-
-import { Entypo } from '@expo/vector-icons'; //pacote de icones
+import MapView, { Marker } from 'react-native-maps';
 
 export default function TarefasScreen() {
   const [tasks, setTasks] = useState([]);
@@ -24,12 +22,11 @@ export default function TarefasScreen() {
   const [showAutoDateWarning, setShowAutoDateWarning] = useState(false);
   const navigation = useNavigation();
   const [image, setImage] = useState(null);
-  const [taskDate, setTaskDate] = useState(new Date()); //armazena a data das tarefas
-  const [taskTime, setTaskTime] = useState(new Date()); //armazena a hora das tarefas
+  const [taskDate, setTaskDate] = useState(new Date());
+  const [taskTime, setTaskTime] = useState(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
-  const [taskLocation, setTaskLocation] = useState('');
-  
+  const [taskLocation, setTaskLocation] = useState(null);
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || taskDate;
@@ -113,7 +110,7 @@ export default function TarefasScreen() {
   const notificationListener = useRef();
   const responseListener = useRef();
 
-  useEffect(() => {
+	useEffect(() => {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
@@ -130,8 +127,6 @@ export default function TarefasScreen() {
     };
   }, []);
 
-
-
   const isTaskValid = () => {
     return (
       taskTitle.trim() !== '' &&
@@ -143,30 +138,26 @@ export default function TarefasScreen() {
 
   const handleAddTask = () => {
     if (!isTaskValid()) {
+      return;
     }
-
-    const currentDate = new Date();
-    const formattedDate = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
-    const formattedTime = `${currentDate.getHours()}:${currentDate.getMinutes()}`;
 
     const newTask = {
       id: Date.now(),
       title: taskTitle,
       description: taskDescription,
-      startDateText: formattedDate,
-      startTimeText: formattedTime,
+      startDateText: taskDate.toLocaleDateString(),
+      startTimeText: taskTime.toLocaleTimeString(),
       dueDateText: taskDueDateText,
       dueTimeText: taskDueTimeText,
       completed: false,
-      image: image
+      image: image,
+      location: taskLocation
     };
 
     setTasks((prevTasks) => [...prevTasks, newTask]);
     resetTaskFields();
     setModalVisible(false);
     setShowAutoDateWarning(true);
-
-
   };
 
   const handleEditTask = (id) => {
@@ -179,6 +170,7 @@ export default function TarefasScreen() {
           dueDateText: taskDueDateText,
           dueTimeText: taskDueTimeText,
           image: image,
+          location: taskLocation
         }
         : task
     );
@@ -187,14 +179,6 @@ export default function TarefasScreen() {
     setEditingTaskId(null);
     resetTaskFields();
     setModalVisible(false);
-  };
-
-  const handleCompleteTask = (id) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-
-    setTasks(updatedTasks);
   };
 
   const handleDeleteTask = (id) => {
@@ -226,12 +210,10 @@ export default function TarefasScreen() {
     setTaskDueDateText('');
     setTaskDueTimeText('');
     setImage(null);
+    setTaskLocation(null);
   };
 
-
-  //image picker
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -239,14 +221,15 @@ export default function TarefasScreen() {
       quality: 1,
     });
 
-    console.log(result);
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+    if (!result.cancelled) {
+      setImage(result.uri);
     }
   };
 
-
+  const handleMapPress = (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setTaskLocation({ latitude, longitude });
+  };
 
   return (
     <View style={styles.container}>
@@ -280,12 +263,13 @@ export default function TarefasScreen() {
               setTaskDueTimeText(item.dueTimeText);
               setModalVisible(true);
               setImage(item.image);
+              setTaskLocation(item.location);
             }}
           >
             <Text style={styles.taskDescription}>{item.description}</Text>
             <Text style={styles.taskDateTime}>{`Início: ${item.startDateText} ${item.startTimeText}`}</Text>
             <Text style={styles.taskDateTime}>{`Conclusão: ${item.dueDateText} ${item.dueTimeText}`}</Text>
-            <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
+            <Image source={{ uri: item.image }} style={{ width: 50, height: 50 }} />
             <TouchableOpacity
               style={[
                 styles.completeButton,
@@ -336,6 +320,20 @@ export default function TarefasScreen() {
             multiline={true}
             numberOfLines={4}
           />
+
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: taskLocation ? taskLocation.latitude : -23.55052,
+              longitude: taskLocation ? taskLocation.longitude : -46.633308,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+            onPress={handleMapPress}
+          >
+            {taskLocation && <Marker coordinate={taskLocation} />}
+          </MapView>
+            
           <View style={styles.buttonContainer}>
 
 
@@ -360,30 +358,23 @@ export default function TarefasScreen() {
               display="default"
               onChange={onChangeTime}
             />
-
-          </View>
-
-          {image && (
-            <View onPress={() => setopenModalImg(true)}>
-              <Image style={styles.imgNovoContato} source={{ uri: image || setImage }} />
-            </View>
-          )}
-
-<TouchableOpacity onPress={pickImage} style={styles.inputImage}>
-  <Ionicons name="camera" size={24} color="black" />
-</TouchableOpacity>
+          </View> 
 
           <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
-        </View>
-        <View style={styles.buttonContainer}>
-          {editingTaskId ? (
-            <>
-              <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
-              <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
-              <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
-            </>
-          ) : (
-            <TouchableOpacity
+          <TouchableOpacity onPress={pickImage} style={styles.inputImage}>
+            <Ionicons name="camera" size={24} color="black" />
+          </TouchableOpacity>
+
+            </View>
+          <View style={styles.buttonContainer}>
+            {editingTaskId ? (
+              <>
+                <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
+                <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
+                <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
+              </>
+            ) : (
+              <TouchableOpacity
   style={styles.addButton2}
   onPress={async () => {
     handleAddTask();
@@ -394,7 +385,8 @@ export default function TarefasScreen() {
 </TouchableOpacity>
 
           )}
-        </View></Modal>
+        </View>
+        </Modal>
     </View>
   );
 }
@@ -504,6 +496,15 @@ const styles = StyleSheet.create({
     marginLeft: -10,
     marginTop: 15,
   },
+  inputImage: {
+    marginLeft: 260,
+    marginRight: 20,
+    marginTop: -85,
+    alignItems: "center",
+    backgroundColor: '#ebebed',
+    borderRadius: 10,
+    padding: 5,
+  },
   dateTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -512,16 +513,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 2,
-    marginRight: 150,
-  },
-  inputImage: {
-    marginLeft: 270,
-    marginRight: 20,
-    marginTop: -35,
-    alignItems: "center",
-    backgroundColor: '#ebebed',
-    borderRadius: 10,
-    padding: 5, // Espaçamento interno
+    marginRight: 156,
   },
   addButton2: {
     width: 50, // Largura do botão
@@ -531,12 +523,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2196F3',
-    marginTop: -580, // Espaçamento acima do botão
+    marginTop: -370, // Espaçamento acima do botão
   },
   buttonText2: {
     color: '#fff', // Cor do texto
     fontSize: 20, // Tamanho do texto
     fontWeight: 'bold', // Negrito
   },
-
+  map: {
+    height: 200,
+    marginBottom: 10,
+    marginTop: 10,
+  },
 });
+

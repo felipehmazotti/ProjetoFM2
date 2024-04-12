@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Platform, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Platform, Image, TouchableWithoutFeedback, Keyboard, handleEditTask } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
@@ -118,20 +118,16 @@ export default function TarefasScreen() {
     };
   }, []);
 
-  const isTaskValid = () => {
-    return (
-      taskTitle.trim() !== '' &&
-      taskDescription.trim() !== '' &&
-      taskDueDateText.trim() !== '' &&
-      taskDueTimeText.trim() !== ''
-    );
-  };
+  const isTaskValid = () => (
+    taskTitle.trim() !== '' &&
+    taskDescription.trim() !== ''
+  );
 
   const handleAddTask = () => {
     if (!isTaskValid()) {
       return;
     }
-
+    setModalVisible(false);
     const newTask = {
       id: Date.now(),
       title: taskTitle,
@@ -149,6 +145,33 @@ export default function TarefasScreen() {
     resetTaskFields();
     setModalVisible(false);
     setShowAutoDateWarning(true);
+  };
+
+  const handleEditTask = (id) => {
+    if (!isTaskValid()) {
+      return;
+    }
+    const updatedTasks = tasks.map(task => {
+      if (task.id === id) {
+        return {
+          ...task,
+          title: taskTitle,
+          description: taskDescription,
+          startDateText: taskDate.toLocaleDateString(),
+          startTimeText: taskTime.toLocaleTimeString(),
+          dueDateText: taskDueDateText,
+          dueTimeText: taskDueTimeText,
+          image: image,
+          location: taskLocation
+        };
+      } else {
+        return task;
+      }
+    });
+    setTasks(updatedTasks);
+    setEditingTaskId(null);
+    resetTaskFields();
+    setModalVisible(false);
   };
 
   const handleCompleteTask = (id) => {
@@ -210,154 +233,156 @@ export default function TarefasScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Tarefas</Text>
-      </View>
-      <TextInput
-        style={styles.inputpesuisa}
-        placeholder="Pesquisar tarefas..."
-        value={searchText}
-        onChangeText={(text) => {
-          setSearchText(text);
-          handleSearch();
-        }}
-        onSubmitEditing={handleSearch}
-      />
-      <FlatList
-        data={displayedTasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={[
-              styles.taskContainer,
-              { borderColor: item.completed ? '#4CAF50' : '#ccc', borderWidth: 1 },
-            ]}
-            onPress={() => {
-              setEditingTaskId(item.id);
-              setTaskTitle(item.title);
-              setTaskDescription(item.description);
-              setTaskDueDateText(item.dueDateText);
-              setTaskDueTimeText(item.dueTimeText);
-              setModalVisible(true);
-              setImage(item.image);
-              setTaskLocation(item.location);
-            }}
-          >
-            <Text style={styles.taskDescription}>{item.description}</Text>
-            <Text style={styles.taskDateTime}>{`Início: ${item.startDateText} ${item.startTimeText}`}</Text>
-            <Text style={styles.taskDateTime}>{`Conclusão: ${item.dueDateText} ${item.dueTimeText}`}</Text>
-            <Image source={{ uri: item.image }} style={{ width: 50, height: 50 }} />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Tarefas</Text>
+        </View>
+        <TextInput
+          style={styles.inputpesuisa}
+          placeholder="Pesquisar tarefas..."
+          value={searchText}
+          onChangeText={(text) => {
+            setSearchText(text);
+            handleSearch();
+          }}
+          onSubmitEditing={handleSearch}
+        />
+        <FlatList
+          data={displayedTasks}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item, index }) => (
             <TouchableOpacity
               style={[
-                styles.completeButton,
-                { backgroundColor: item.completed ? '#F44336' : '#4CAF50' },
+                styles.taskContainer,
+                { borderColor: item.completed ? '#4CAF50' : '#ccc', borderWidth: 1 },
               ]}
-              onPress={() => handleCompleteTask(item.id)}
+              onPress={() => {
+                setEditingTaskId(item.id);
+                setTaskTitle(item.title);
+                setTaskDescription(item.description);
+                setTaskDueDateText(item.dueDateText);
+                setTaskDueTimeText(item.dueTimeText);
+                setModalVisible(true);
+                setImage(item.image);
+                setTaskLocation(item.location);
+              }}
             >
-              <Text style={styles.completeButtonText}>
-                {item.completed ? 'Desfazer' : 'Feito'}
-              </Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
-        style={styles.list}
-      />
-      <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setEditingTaskId(null);
-            setModalVisible(true);
-            setShowAutoDateWarning(true);
-          }}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>
-            {editingTaskId ? 'Editar Tarefa' : 'Adicionar Tarefa'}
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Título da Tarefa"
-            placeholderTextColor="black"
-            value={taskTitle}
-            onChangeText={setTaskTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Descrição da Tarefa"
-            placeholderTextColor="black"
-            value={taskDescription}
-            onChangeText={setTaskDescription}
-            multiline={true}
-            numberOfLines={4}
-          />
-
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: taskLocation ? taskLocation.latitude : -23.55052,
-              longitude: taskLocation ? taskLocation.longitude : -46.633308,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-            onPress={handleMapPress}
-          >
-            {taskLocation && <Marker coordinate={taskLocation} />}
-          </MapView>
-
-          <View style={styles.buttonContainer}>
-            <DateTimePicker
-              testID="datePicker"
-              value={taskDate}
-              mode={'date'}
-              is24Hour={true}
-              display="default"
-              onChange={onChangeDate}
-            />
-            <DateTimePicker
-              testID="timePicker"
-              value={taskTime}
-              mode={'time'}
-              is24Hour={true}
-              display="default"
-              onChange={onChangeTime}
-            />
-          </View>
-
-          <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
-          <TouchableOpacity onPress={pickImage} style={styles.inputImage}>
-            <Ionicons name="camera" size={24} color="black" />
-          </TouchableOpacity>
-
-          <View style={styles.buttonContainer}>
-            {editingTaskId ? (
-              <>
-                <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
-                <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
-                <Button title="Cancelar" onPress={() => { setModalVisible(false); setShowAutoDateWarning(false); }} />
-              </>
-            ) : (
+              <Text style={styles.taskDescription}>{item.description}</Text>
+              <Text style={styles.taskDateTime}>{`Início: ${item.startDateText} ${item.startTimeText}`}</Text>
+              <Text style={styles.taskDateTime}>{`Conclusão: ${item.dueDateText} ${item.dueTimeText}`}</Text>
+              <Image source={{ uri: item.image }} style={{ width: 50, height: 50 }} />
               <TouchableOpacity
-                style={styles.addButton2}
-                onPress={async () => {
-                  handleAddTask();
-                  await sendPushNotification(expoPushToken);
-                }}
+                style={[
+                  styles.completeButton,
+                  { backgroundColor: item.completed ? '#F44336' : '#4CAF50' },
+                ]}
+                onPress={() => handleCompleteTask(item.id)}
               >
-                <Text style={styles.buttonText2}>+</Text>
+                <Text style={styles.completeButtonText}>
+                  {item.completed ? 'Desfazer' : 'Feito'}
+                </Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </TouchableOpacity>
+          )}
+          style={styles.list}
+        />
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setEditingTaskId(null);
+              setModalVisible(true);
+              setShowAutoDateWarning(true);
+            }}
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </View>
+
+        <Modal visible={modalVisible} animationType="slide">
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>
+                {editingTaskId ? 'Editar Tarefa' : 'Adicionar Tarefa'}
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Título da Tarefa"
+                placeholderTextColor="black"
+                value={taskTitle}
+                onChangeText={setTaskTitle}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Descrição da Tarefa"
+                placeholderTextColor="black"
+                value={taskDescription}
+                onChangeText={setTaskDescription}
+                multiline={true}
+                numberOfLines={4}
+              />
+
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: taskLocation ? taskLocation.latitude : -23.55052,
+                  longitude: taskLocation ? taskLocation.longitude : -46.633308,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
+                }}
+                onPress={handleMapPress}
+              >
+                {taskLocation && <Marker coordinate={taskLocation} />}
+              </MapView>
+
+              <View style={styles.buttonContainer}>
+                <DateTimePicker
+                  testID="datePicker"
+                  value={taskDate}
+                  mode={'date'}
+                  is24Hour={true}
+                  display="default"
+                  onChange={onChangeDate}
+                />
+                <DateTimePicker
+                  testID="timePicker"
+                  value={taskTime}
+                  mode={'time'}
+                  is24Hour={true}
+                  display="default"
+                  onChange={onChangeTime}
+                />
+              </View>
+
+              <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
+              <TouchableOpacity onPress={pickImage} style={styles.inputImage}>
+                <Ionicons name="camera" size={24} color="black" />
+              </TouchableOpacity>
+
+              <View style={styles.buttonContainer}>
+                {editingTaskId ? (
+                  <>
+                    <Button title="Salvar" onPress={() => handleEditTask(editingTaskId)} />
+                    <Button title="Excluir" onPress={() => handleDeleteTask(editingTaskId)} color="red" />
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.addButtonModal}
+                    onPress={() => {
+                      handleAddTask();
+                    }}
+                  >
+                    <Text style={styles.addButtonText}>+</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -392,10 +417,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
   },
-  taskTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   taskDescription: {
     fontSize: 16,
     marginTop: 5,
@@ -403,11 +424,6 @@ const styles = StyleSheet.create({
   taskDateTime: {
     fontSize: 14,
     marginTop: 5,
-  },
-  autoDateText: {
-    fontSize: 14,
-    color: 'red',
-    marginBottom: 10,
   },
   completeButton: {
     backgroundColor: '#4CAF50',
@@ -455,54 +471,38 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: 'black',
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 20,
     paddingHorizontal: 10,
     borderRadius: 5,
   },
+  map: {
+    height: 200,
+    marginBottom: 20,
+  },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 3.5,
-    marginLeft: -10,
-    marginTop: 15,
+    justifyContent: 'space-around',
+    marginBottom: 20,
   },
   inputImage: {
-    marginLeft: 260,
-    marginRight: 20,
-    marginTop: -85,
-    alignItems: "center",
-    backgroundColor: '#ebebed',
-    borderRadius: 10,
-    padding: 5,
+    alignItems: 'center',
+    backgroundColor: '#DDDDDD',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 20,
   },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dateTimeContainer2: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 2,
-    marginRight: 156,
-  },
-  addButton2: {
+  addButtonModal: {
     width: 50,
     height: 50,
-    marginLeft: 190,
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2196F3',
-    marginTop: -370,
   },
   buttonText2: {
     color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  map: {
-    height: 200,
-    marginBottom: 10,
-    marginTop: 10,
+    fontSize: 32,
+    alignItems: 'center',
+    marginBottom: 6,
   },
 });

@@ -1,10 +1,14 @@
+// Navegacao.js
+
 import React from 'react';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import TarefasScreen from './apptarefas';
 import CalendarioScreen from './appcalendario';
+import Login from './login'; // Importe o componente de login
 import { View, Text } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons'; // Importe MaterialIcons do expo/vector-icons
+import { MaterialIcons } from '@expo/vector-icons';
+
 
 const Tab = createMaterialBottomTabNavigator();
 
@@ -12,18 +16,28 @@ const Navegacao = () => {
   return (
     <NavigationContainer>
       <Tab.Navigator
-        barStyle={{ backgroundColor: 'white' }} // Define a cor da barra como branca
-        activeColor="black" // Define a cor do texto como preto
-        labeled={false} // Remove os subtitulos
-        // Você pode ajustar a cor da borda aqui se desejar
+        barStyle={{ backgroundColor: 'white' }}
+        activeColor="black"
+        labeled={false}
       >
+        <Tab.Screen
+          name="Login"
+          component={Login}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                <MaterialIcons name="login" size={24} color={color} />
+                <Text style={{ color, fontSize: 16 }}>login</Text>
+              </View>
+            ),
+          }}
+        />
         <Tab.Screen
           name="Tarefas"
           component={TarefasScreen}
           options={{
             tabBarIcon: ({ color }) => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                {/* Adicione um ícone para "Tarefas" */}
                 <MaterialIcons name="list" size={24} color={color} />
                 <Text style={{ color, fontSize: 16, marginRight: -30, marginLeft: -27, }}>Tarefas</Text>
               </View>
@@ -36,7 +50,6 @@ const Navegacao = () => {
           options={{
             tabBarIcon: ({ color }) => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                {/* Aumente o tamanho do ícone do calendário */}
                 <MaterialIcons name="date-range" size={24} color={color} />
                 <Text style={{ color, fontSize: 16 }}>Calendário</Text>
               </View>

@@ -40,17 +40,7 @@ export default function TarefasScreen() {
     setTaskTime(currentTime);
   };
 
-  //mensagem
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
-
-
-  // Can use this function below or use Expo's Push Notification Tool from: https://expo.dev/notifications
+  // Função para lidar com o envio de notificações
   async function sendPushNotification(expoPushToken) {
     const message = {
       to: expoPushToken,
@@ -71,6 +61,7 @@ export default function TarefasScreen() {
     });
   }
 
+  // Função para registrar o dispositivo para receber notificações
   async function registerForPushNotificationsAsync() {
     let token;
 
@@ -110,7 +101,7 @@ export default function TarefasScreen() {
   const notificationListener = useRef();
   const responseListener = useRef();
 
-	useEffect(() => {
+  useEffect(() => {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
@@ -154,31 +145,18 @@ export default function TarefasScreen() {
       location: taskLocation
     };
 
-    setTasks((prevTasks) => [...prevTasks, newTask]);
+    setTasks(prevTasks => [...prevTasks, newTask]);
     resetTaskFields();
     setModalVisible(false);
     setShowAutoDateWarning(true);
   };
 
-  const handleEditTask = (id) => {
+  const handleCompleteTask = (id) => {
     const updatedTasks = tasks.map((task) =>
-      task.id === id
-        ? {
-          ...task,
-          title: taskTitle,
-          description: taskDescription,
-          dueDateText: taskDueDateText,
-          dueTimeText: taskDueTimeText,
-          image: image,
-          location: taskLocation
-        }
-        : task
+      task.id === id ? { ...task, completed: !task.completed } : task
     );
 
     setTasks(updatedTasks);
-    setEditingTaskId(null);
-    resetTaskFields();
-    setModalVisible(false);
   };
 
   const handleDeleteTask = (id) => {
@@ -333,12 +311,8 @@ export default function TarefasScreen() {
           >
             {taskLocation && <Marker coordinate={taskLocation} />}
           </MapView>
-            
+
           <View style={styles.buttonContainer}>
-
-
-
-
             <DateTimePicker
               testID="datePicker"
               value={taskDate}
@@ -347,10 +321,7 @@ export default function TarefasScreen() {
               display="default"
               onChange={onChangeDate}
             />
-
-
-
-            <DateTimePicker style={styles.dateTimeContainer2}
+            <DateTimePicker
               testID="timePicker"
               value={taskTime}
               mode={'time'}
@@ -358,14 +329,13 @@ export default function TarefasScreen() {
               display="default"
               onChange={onChangeTime}
             />
-          </View> 
+          </View>
 
           <Image source={{ uri: image }} style={{ width: 50, height: 50 }} />
           <TouchableOpacity onPress={pickImage} style={styles.inputImage}>
             <Ionicons name="camera" size={24} color="black" />
           </TouchableOpacity>
 
-            </View>
           <View style={styles.buttonContainer}>
             {editingTaskId ? (
               <>
@@ -375,18 +345,18 @@ export default function TarefasScreen() {
               </>
             ) : (
               <TouchableOpacity
-  style={styles.addButton2}
-  onPress={async () => {
-    handleAddTask();
-    await sendPushNotification(expoPushToken);
-  }}
->
-  <Text style={styles.buttonText2}>+</Text>
-</TouchableOpacity>
-
-          )}
+                style={styles.addButton2}
+                onPress={async () => {
+                  handleAddTask();
+                  await sendPushNotification(expoPushToken);
+                }}
+              >
+                <Text style={styles.buttonText2}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        </Modal>
+      </Modal>
     </View>
   );
 }
@@ -516,19 +486,19 @@ const styles = StyleSheet.create({
     marginRight: 156,
   },
   addButton2: {
-    width: 50, // Largura do botão
-    height: 50, // Altura do botão
+    width: 50,
+    height: 50,
     marginLeft: 190,
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2196F3',
-    marginTop: -370, // Espaçamento acima do botão
+    marginTop: -370,
   },
   buttonText2: {
-    color: '#fff', // Cor do texto
-    fontSize: 20, // Tamanho do texto
-    fontWeight: 'bold', // Negrito
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   map: {
     height: 200,
@@ -536,4 +506,3 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
-

@@ -24,10 +24,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 10,
   },
+  
   calendarContainer: {
     marginTop: 20,
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 10,
   },
+  
 });

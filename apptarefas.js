@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Platform, Image, TouchableWithoutFeedback, Keyboard, handleEditTask } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Button, Platform, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +27,10 @@ export default function TarefasScreen() {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [taskLocation, setTaskLocation] = useState(null);
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [notification, setNotification] = useState(false);
+  const notificationListener = useRef();
+  const responseListener = useRef();
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || taskDate;
@@ -62,68 +66,74 @@ export default function TarefasScreen() {
   }
 
   // Função para registrar o dispositivo para receber notificações
-  async function registerForPushNotificationsAsync() {
-    let token;
-
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-
-    if (Device.isDevice) {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
-        alert('Failed to get push token for push notification!');
-        return;
-      }
-      token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig.extra.eas.projectId,
-      });
-      console.log(token);
-    } else {
-      alert('Must use physical device for Push Notifications');
-    }
-
-    return token.data;
-  }
-
-  const [expoPushToken, setExpoPushToken] = useState('');
-  const [notification, setNotification] = useState(false);
-  const notificationListener = useRef();
-  const responseListener = useRef();
-
   useEffect(() => {
-    registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
-
+    const registerForPushNotificationsAsync = async () => {
+      let token;
+    
+      if (Platform.OS === 'android') {
+        Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+    
+      if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          alert('Failed to get push token for push notification!');
+          return;
+        }
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+        console.log('Expo Push Token:', token); // Adicionando log para visualizar o token
+        // Envio da notificação após obter o token
+        if (token) {
+          await sendPushNotification(token);
+        }
+      } else {
+        alert('Must use physical device for Push Notifications');
+      }
+    
+      return token;
+    };
+  
+    const getTokenAndSendNotification = async () => {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        await sendPushNotification(token);
+      }
+    };
+  
+    getTokenAndSendNotification();
+  
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
     });
-
+  
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.log(response);
     });
-
+  
     return () => {
       Notifications.removeNotificationSubscription(notificationListener.current);
       Notifications.removeNotificationSubscription(responseListener.current);
     };
   }, []);
+  
+  
 
   const isTaskValid = () => (
     taskTitle.trim() !== '' &&
     taskDescription.trim() !== ''
   );
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!isTaskValid()) {
       return;
     }
@@ -140,11 +150,16 @@ export default function TarefasScreen() {
       image: image,
       location: taskLocation
     };
-
+  
     setTasks(prevTasks => [...prevTasks, newTask]);
     resetTaskFields();
     setModalVisible(false);
     setShowAutoDateWarning(true);
+  
+    // Envio da notificação após adicionar a tarefa à lista
+    if (expoPushToken) {
+      await sendPushNotification(expoPushToken);
+    }
   };
 
   const handleEditTask = (id) => {
@@ -369,7 +384,7 @@ export default function TarefasScreen() {
                   </>
                 ) : (
                   <TouchableOpacity
-                    style={styles.addButtonModal}
+                    style={styles.addButton} // Alterado de styles.addButtonModal para styles.addButton
                     onPress={() => {
                       handleAddTask();
                     }}
@@ -490,19 +505,5 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginBottom: 20,
-  },
-  addButtonModal: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-  },
-  buttonText2: {
-    color: '#fff',
-    fontSize: 32,
-    alignItems: 'center',
-    marginBottom: 6,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import SplashScreen from 'react-native-splash-screen';
 import TarefasScreen from './apptarefas'; // Importe o componente TarefasScreen
@@ -45,12 +45,12 @@ const Navegacao = () => {
       >
         <Tab.Screen
           name="Login"
-          component={Login} // Corrigido para utilizar o componente Login
+          component={Login}
           options={{
             tabBarIcon: ({ color }) => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <MaterialIcons name="login" size={24} color={color} />
-                <Text style={{ color }}>Login</Text>
+                <Text style={styles.tabText}>Login</Text>
               </View>
             ),
           }}
@@ -62,7 +62,7 @@ const Navegacao = () => {
             tabBarIcon: ({ color }) => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <MaterialIcons name="list" size={24} color={color} />
-                <Text style={{ color, fontSize: 16 }}>Tarefas</Text>
+                <Text style={styles.tabText2}>Tarefas</Text>
               </View>
             ),
           }}
@@ -74,7 +74,7 @@ const Navegacao = () => {
             tabBarIcon: ({ color }) => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <MaterialIcons name="date-range" size={24} color={color} />
-                <Text style={{ color }}>Calendário</Text>
+                <Text style={styles.tabText3}>Calendário</Text>
               </View>
             ),
           }}
@@ -83,5 +83,28 @@ const Navegacao = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  tabText: {
+    color: 'black',
+    marginLeft: -4,
+    marginRight: -12,
+    fontSize: 14,
+  },
+  tabText2: {
+    color: 'black',
+    marginLeft: -4,
+    marginRight: -12,
+    marginTop: 3,
+    fontSize: 14,
+  },
+  tabText3: {
+    color: 'black',
+    marginLeft: -30,
+    marginRight: -33,
+    marginTop: 4,
+    fontSize: 14,
+  },
+});
 
 export default Navegacao;

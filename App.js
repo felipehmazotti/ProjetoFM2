@@ -5,7 +5,6 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import SplashScreen from 'react-native-splash-screen';
 import TarefasScreen from './apptarefas'; // Importe o componente TarefasScreen
-import CalendarioScreen from './appcalendario'; // Importe o componente CalendarioScreen
 import Login from './login'; // Importe o componente Login
 
 const Tab = createMaterialBottomTabNavigator();
@@ -67,18 +66,6 @@ const Navegacao = () => {
             ),
           }}
         />
-        <Tab.Screen
-          name="Calendário"
-          component={CalendarioScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                <MaterialIcons name="date-range" size={24} color={color} />
-                <Text style={styles.tabText3}>Calendário</Text>
-              </View>
-            ),
-          }}
-        />
       </Tab.Navigator>
     </NavigationContainer>
   );
@@ -96,13 +83,6 @@ const styles = StyleSheet.create({
     marginLeft: -4,
     marginRight: -12,
     marginTop: 3,
-    fontSize: 14,
-  },
-  tabText3: {
-    color: 'black',
-    marginLeft: -30,
-    marginRight: -33,
-    marginTop: 4,
     fontSize: 14,
   },
 });
